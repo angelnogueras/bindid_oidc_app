@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Demo BindID</title>
+
+  <meta name="xm-bind-id-client_id" content="<%=client_id%>">
+  <meta name="xm-bind-id-redirect_uri" content="<%=redirect_uri%>">
+  <!--
+  <meta name="xm-bind-id-nonce" content="">
+  <meta name="xm-bind-id-state" content="">
+  <meta name="xm-bind-id-scope" content="bindid_network_info email phone">
+  <meta name="xm-bind-id-verifications" content="phone email">
+  <meta name="xm-bind-id-custom_message" content="Login using Your RP">
+  <meta name="xm-bind-id-aux_link" content="https://your-rp.example.com/more">
+  <meta name="xm-bind-id-aux_link_title" content="More ways to verify">
+  -->
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=Promise%2CPromise.prototype.finally%2CTextDecoder%2CTextEncoder%2CObject.entries"></script>
+  <script src="https://signin.bindid-sandbox.io/bindid-sdk/transmit-bind-id-sdk.js" defer></script>
+
+  <style>
+    * { margin: 0; }
+    #img_body { width: 100%; }
+    .editable {
+      background-color: white;
+      position: absolute;
+      font-family: "UniversLT Light", Calibri, Myriad, Tahoma, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 1rem;
+      font-weight: normal;
+      line-height: 1.5;
+      left: 510px;
+    }
+    #username { top: 272px; }
+    #password { top: 327px; }
+    [contenteditable] {
+      outline: 0px solid transparent;
+    }
+  </style>
+</head>
+<body>
+
+  <img id="img_body" src="img/login.jpg" alt="full page" class="xm-bind-id-button"/>
+
+  <div id="username" class="editable" contenteditable="true">
+    francisco@company.com
+  </div>
+  <div id="password" class="editable" contenteditable="true">
+    ************
+  </div>
+
+</body>
+</html>
