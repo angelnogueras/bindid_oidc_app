@@ -1,15 +1,14 @@
-const PORT = 3000;
-
 const express = require('express');
 const fs = require('fs');
 const https = require('https');
 const axios = require('axios');
 const qs = require('qs');
 const jwt_decode = require('jwt-decode');
-const identityStore = require('./identityStore');
 const { setBindIdAlias, getUserData, setUserData } = require('./bindidService');
 const app = express();
 require('dotenv').config();
+
+const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 app.use(express.json());
@@ -17,12 +16,7 @@ app.use(express.urlencoded({extended: true}));
 app.set('view engine', 'ejs');
 
 
-/*
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
-*/
-
+/********** ROUTES (TODO: create router) ********/
 const index = (req, res) => {
   res.render('index', {
     redirect_uri: process.env.REDIRECT_URL,
@@ -38,11 +32,9 @@ app.get('/redirect.html', (req, res) => {
   });
 });
 
-//TODO: add router
 app.get('/token_exchange', async (req, res) => {
   // Get token
   const code = req.query.code;
-  // const state = req.query.state;
 
   const bodyData = {
     'grant_type': 'authorization_code',
@@ -51,10 +43,6 @@ app.get('/token_exchange', async (req, res) => {
     'client_id': process.env.CLIENT_ID,
     'client_secret': process.env.CLIENT_SECRET
   };
-
-  //console.log(`About to exchange code for token.`);
-  //console.log(bodyData);
-  //console.log(`${qs.stringify(bodyData)}`);
 
   // Exchange token
   let response = null;
@@ -79,7 +67,9 @@ app.get('/token_exchange', async (req, res) => {
     else {
       console.log(error.message);
     }
-    return res.send({"message": "error retrieving token"});
+    return res.send({
+      "message": "error retrieving token"
+    });
   }
 
 
@@ -89,11 +79,13 @@ app.get('/token_exchange', async (req, res) => {
   console.log(response.data);
   const id_token = response.data.id_token;
   const access_token = response.data.access_token;
-  //const scope = response.data.scope;
-  //const expires_in = response.data.expires_in;
-  //const token_type = response.data.token_type;
+  /* Other usefull info:
+    const scope = response.data.scope;
+    const expires_in = response.data.expires_in;
+    const token_type = response.data.token_type;
+  */
 
-  /*** BindID Alias */
+  // Set BindID Alias 
   try {
     const decodedHeader = jwt_decode(id_token, {header: true});
     const decodedBody = jwt_decode(id_token);
@@ -111,12 +103,12 @@ app.get('/token_exchange', async (req, res) => {
     // InvalidTokenError
     console.error(err);
     res.send({
-      "message": "ups, this is embarrasing",
+      "message": "ups, this is embarrasing, something went wrong setting alias",
       "error": err
     });
   }
-  /*** BindID Alias */
 
+  // Get User Info from /userinfo endpoint
   let responseUI = null;
   try {
     responseUI = await axios.get(
@@ -145,9 +137,11 @@ app.get('/token_exchange', async (req, res) => {
   }
 
 
-  /////////////// User Data
+  /////////////// Uncomment to set some static User Data
   //await setUserData(access_token);
   ///////////////
+
+  // Get User Data
   let userData = null;
   try {
     userData = await getUserData(access_token);
@@ -156,10 +150,12 @@ app.get('/token_exchange', async (req, res) => {
     console.log(`Error getting user data: ${error}`);
   }
 
+  // Send information to page
   try {
     const decodedHeader = jwt_decode(id_token, {header: true});
     const decodedBody = jwt_decode(id_token);
 
+    // Uncomment the info to be shown in /redirect.html
     res.send({
       //"message": "authentication ok",
       //"bindid_header": decodedHeader,
@@ -177,113 +173,6 @@ app.get('/token_exchange', async (req, res) => {
     });
   }
 
-});
-
-/*
-app.get('/token_exchange_page', async (req, res) => {
-  // Get token
-  const code = req.query.code;
-  //console.log(req.query);
-
-  const bodyData = {
-    'grant_type': 'authorization_code',
-    'code': code,
-    'redirect_uri': process.env.REDIRECT_URL,
-    'client_id': process.env.CLIENT_ID,
-    'client_secret': process.env.CLIENT_SECRET
-  };
-
-  console.log(`About to exchange code for token:`);
-  //console.log(bodyData);
-  //console.log(`${qs.stringify(bodyData)}`);
-
-  // Exchange token
-  let response = null;
-  try {
-    response = await axios.post(
-      'https://signin.bindid-sandbox.io/token',
-      qs.stringify(bodyData),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded'} }
-    );
-    console.log("done");
-  }
-  catch (error) {
-    if (error.response) {
-      console.log(error.response.data);
-      console.log(error.response.status);
-      console.log(error.response.headers);
-    }
-    else if (error.request) {
-      // The request was made but no response was received
-      console.log(error.request);
-    }
-    else {
-      console.log(error.message);
-    }
-    return res.send({"message": "error retrieving token"});
-  }
-
-
-  console.log(response.data);
-  const id_token = response.data.id_token;
-  console.log(jwt_decode(id_token));
-  const access_token = response.data.access_token;
-
-  try {
-    const decodedHeader = jwt_decode(id_token, {header: true});
-    const decodedBody = jwt_decode(id_token);
-
-    const bindIdAlias = decodedBody.bindid_alias;
-    console.log(`BindIdAlias: ${bindIdAlias}`);
-
-    if (!bindIdAlias) {
-      // New User
-      // TODO: Save access_token as session variable instead? Maybe not
-      // good idea to keep it stateless
-      return res.redirect(`/passwordLogin.html?access_token=${access_token}`);
-    }
-    else {
-      // Existing User
-      const userProfile = JSON.stringify(identityStore.getUserProfile(bindIdAlias));
-      return res.redirect(`/authenticated?user_details=${encodeURIComponent(userProfile)}`);
-    }
-  }
-  catch (err) {
-    // InvalidTokenError
-    console.error(err);
-    res.send({
-      "message": "ups, this is embarrasing",
-      "error": err
-    });
-  }
-
-});
-*/
-
-
-app.post('/authenticate', (req, res) => {
-  const userProfile = identityStore.getUserProfile(req.body.username, req.body.password);
-  if (userProfile) {
-    // Feedback bindIdAlias
-    // TODO: do not send/receive access token
-    setBindIdAlias(userProfile.userId, req.body.access_token);
-
-    res.redirect(`/authenticated?user_details=${encodeURIComponent(JSON.stringify(userProfile))}`);
-  }
-  else {
-    //TODO: user not found ==> invalid credentials
-  }
-});
-
-app.get('/authenticated', (req, res) => {
-  const userDetails = JSON.parse(req.query.user_details);
-  if (userDetails) {
-    // TODO: change
-    res.send(`Hello, ${userDetails.fullName}`);
-  }
-  else {
-    // TODO: do something
-  }
 });
 
 
