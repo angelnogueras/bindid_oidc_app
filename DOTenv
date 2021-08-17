@@ -1,5 +1,7 @@
 # Rename as ".env"
 PORT=3000
+BINDID_BASE_URL=<https://signin.bindid-sandbox.io or https://signin.bindid.io>
+BINDID_API_URL=<https://api.bindid-sandbox.io or https://api.bindid.io>
 CLIENT_ID=<client_id>
 CLIENT_SECRET=<client_secret>
 REDIRECT_URL=<redirect_url>
