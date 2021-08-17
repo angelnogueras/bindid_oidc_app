@@ -27,6 +27,7 @@ app.disable('x-powered-by');
 
 // Session Middleware
 app.use(session({
+  name: 'sessionId',
   secret: process.env.SECRET_SIGN_SESSION_COOKIE,
   resave: false,
   saveUninitialized: true,
